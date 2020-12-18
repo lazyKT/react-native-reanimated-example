@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Button, Text } from 'react-native';
+import { View, StyleSheet, Dimensions, Text } from 'react-native';
 import BottomSheet from './BottomSheet';
 import Animated, { useCode, cond, eq, set, not, interpolate } from 'react-native-reanimated';
 import { TouchableOpacity, TapGestureHandler, State } from 'react-native-gesture-handler';
@@ -10,25 +10,43 @@ const {
   event
 } = Animated;
 
+const { height } = Dimensions.get('window');
+
 export default function App(){
 
   // let translateY = new Value(200);
   // define animation State (start, end, etc ..)
   const state = new Value(State.UNDETERMINED);
+  const swipeY = new Value(0);
   const isExpand = new Value(0);
   const transition = withTransition(isExpand); // something like interpolation
 
   let translateY = interpolate(transition, {
     // if isExpand is 0, then translateY is 200. Else, transalteY is 0
     inputRange: [ 0, 1], 
-    outputRange: [ 200, 0],
+    outputRange: [ height - 100, 50],
   });
 
-  let opacity = interpolate(translateY, {
+  let sheetOpacity = interpolate(translateY, {
     // if translateY is 0, then opacity will be 1, ELSE, opacity is 0
-    inputRange: [ 0, 190, 200],
-    outputRange: [ 1, 1, 0]
+    inputRange: [ 50, 100 , height - 100],
+    outputRange: [ 0, 0, 1]
   });
+
+  let contentOpacity = interpolate(translateY, {
+    inputRange: [ 50, 100, height - 100 ],
+    outputRange: [ 1, 1, 0 ]
+  })
+
+  // pan responder on bottom sheet
+  const onGestureEvent = Animated.event([
+    {
+      nativeEvent: {
+        translationY: swipeY,
+        state: state
+      }
+    },
+  ]);
 
   // capture the User gestures
   // tap(touch), pinch, swipe, etc ..
@@ -113,15 +131,19 @@ export default function App(){
       />
       
       <BottomSheet
+        isExpand={isExpand}
         translateY={translateY}
-        opacity={opacity}
+        swipeY={swipeY}
+        sheetOpacity={sheetOpacity}
+        contentOpacity={contentOpacity}
         gestureHandler={{
           onHandlerStateChange: Animated.event([
             {
               nativeEvent: { state },
             }
-          ]),
+          ])
         }}
+        onGestureEvent={onGestureEvent}
       />
 
     </View>
